@@ -104,6 +104,14 @@ pub static mut TRACEBACK_ERROR_CALLBACK: Option<TracebackCallbackType> = None;
 /// information obtained from environment variables (`CARGO_PKG_NAME`, `COMPUTERNAME`, and
 /// `USERNAME`, respectively) or assigns default values if the environment variables are
 /// not present.
+///
+/// # Tracing
+///
+/// Tracing can be essential for diagnosing and debugging issues in your applications. When an
+/// error occurs, you can create a `TracebackError` instance to record the error's details, such
+/// as the error message, the location in the code where it occurred, and additional contextual
+/// information.
+/// Should a function return a TracebackError, it can then be re-captured to trace it even further.
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct TracebackError {
     pub message: String,
@@ -379,6 +387,88 @@ pub fn default_callback(err: TracebackError) {
 ///     // Some error occurred
 ///     let generic_error: Box<dyn std::error::Error> = Box::new(std::io::Error::new(std::io::ErrorKind::Other, "Generic error"));
 ///     Err(traceback!(generic_error, "Custom error message"))
+/// }
+/// ```
+///
+/// Tracing an error:
+/// ```rust
+/// use traceback_error::{traceback, TracebackError};
+///
+/// fn main() {
+///     match caller_of_tasks() {
+///         Ok(_) => {}
+///         Err(e) => {
+///             traceback!(e, "One of the tasks failed");
+///         }
+///     }
+/// }
+///
+/// fn task_that_may_fail() -> Result<(), TracebackError> {
+///     return Err(traceback!("task_that_may_fail failed"));
+/// }
+///
+/// fn other_task_that_may_fail() -> Result<(), TracebackError> {
+///     return Err(traceback!("other_task_that_may_fail failed"));
+/// }
+///
+/// fn caller_of_tasks() -> Result<(), TracebackError> {
+///     match task_that_may_fail() {
+///         Ok(_) => {}
+///         Err(e) => {
+///             return Err(traceback!(err e));
+///         }
+///     };
+///     match other_task_that_may_fail() {
+///         Ok(_) => {}
+///         Err(e) => {
+///             return Err(traceback!(err e));
+///         }
+///     };
+///     Ok(())
+/// }
+/// ```
+/// When the error is dropped at the end of main() in the above example, the default callback
+/// function generates the following JSON error file:
+/// ```json
+/// {
+///   "message": "One of the tasks failed",
+///   "file": "src\\main.rs",
+///   "line": 7,
+///   "parent": {
+///     "message": "task_that_may_fail failed",
+///     "file": "src\\main.rs",
+///     "line": 24,
+///     "parent": {
+///       "message": "task_that_may_fail failed",
+///       "file": "src\\main.rs",
+///       "line": 13,
+///       "parent": null,
+///       "time_created": "2023-09-11T10:27:25.195697400Z",
+///       "extra_data": null,
+///       "project": null,
+///       "computer": null,
+///       "user": null,
+///       "is_parent": true,
+///       "is_handled": true,
+///       "is_default": false
+///     },
+///     "time_created": "2023-09-11T10:27:25.195789100Z",
+///     "extra_data": null,
+///     "project": null,
+///     "computer": null,
+///     "user": null,
+///     "is_parent": true,
+///     "is_handled": true,
+///     "is_default": false
+///   },
+///   "time_created": "2023-09-11T10:27:25.195836Z",
+///   "extra_data": null,
+///   "project": "traceback_test",
+///   "computer": "tommypc",
+///   "user": "tommy",
+///   "is_parent": false,
+///   "is_handled": true,
+///   "is_default": false
 /// }
 /// ```
 ///
