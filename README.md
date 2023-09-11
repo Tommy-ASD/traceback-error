@@ -21,7 +21,7 @@ traceback-error = "0.1.5"
 
 ## Usage
 
-```rs
+```rust
 use traceback_error::TracebackError;
 
 fn main() {
@@ -62,4 +62,4 @@ This project is still in very early development, and proper contribution guideli
 
 ## License
 
-This crate is dual-licensed under the [MIT License](LICENSE-MIT) and the [Apache License, Version 2.0](LICENSE-APACHE-2.0). You may choose either of these licenses when using this crate. See the [LICENSE-MIT](LICENSE-MIT) and [LICENSE-APACHE-2.0](LICENSE-APACHE-2.0) files for the full text of the licenses.
+This crate is dual-licensed under the [MIT License](LICENSE-MIT) and the [Apache License, Version 2.0](LICENSE-APACHE). You may choose either of these licenses when using this crate. See the [LICENSE-MIT](LICENSE-MIT) and [LICENSE-APACHE](LICENSE-APACHE) files for the full text of the licenses.
