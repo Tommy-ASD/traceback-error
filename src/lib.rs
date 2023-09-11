@@ -210,6 +210,35 @@ impl TracebackError {
             is_default: false,
         }
     }
+    /// This method allows you to attach additional data to a `TracebackError` instance.
+    /// This extra data can be valuable when diagnosing and debugging errors,
+    /// as it provides context and information related to the error.
+    ///
+    /// ## Parameters:
+    /// - extra_data: A serde_json::Value containing the extra data you want to associate with the error.
+    ///
+    /// ## Return Value:
+    /// - Returns a modified `TracebackError` instance with the provided `extra_data`.
+    ///
+    /// ## Example Usage:
+    /// ```rs
+    /// use traceback_error::{traceback, TracebackError, serde_json::json};
+    ///
+    /// fn main() {
+    ///     // Create a new TracebackError with extra data
+    ///     let error = traceback!().with_extra_data(json!({
+    ///         "foo": "bar",
+    ///         "a": "b",
+    ///         "1": "2"
+    ///     }));
+    ///
+    ///     // Now the error instance contains the specified extra data
+    /// }
+    /// ```
+    ///
+    /// This method is useful when you want to enrich error objects with additional information
+    /// relevant to the context in which the error occurred. It ensures that relevant data is
+    /// available for analysis when handling errors in your Rust application.
     pub fn with_extra_data(mut self, extra_data: Value) -> Self {
         self.is_default = false;
         self.extra_data = extra_data;
