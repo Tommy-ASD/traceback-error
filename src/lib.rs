@@ -131,32 +131,12 @@ impl TracebackError {
             is_default: false,
         }
     }
-    pub fn with_parent(mut self, parent: TracebackError) -> Self {
-        self.is_default = false;
-        self.parent = Some(Box::new(parent.with_is_parent(true)));
-        self
-    }
     pub fn with_extra_data(mut self, extra_data: Value) -> Self {
         self.is_default = false;
         self.extra_data = extra_data;
         self
     }
-    pub fn with_project(mut self, project: &str) -> Self {
-        self.is_default = false;
-        self.project = Some(project.to_string());
-        self
-    }
-    pub fn with_computer_name(mut self, computer: &str) -> Self {
-        self.is_default = false;
-        self.computer = Some(computer.to_string());
-        self
-    }
-    pub fn with_username(mut self, user: &str) -> Self {
-        self.is_default = false;
-        self.user = Some(user.to_string());
-        self
-    }
-    pub fn with_env_vars(mut self) -> Self {
+    fn with_env_vars(mut self) -> Self {
         // get project name using the CARGO_PKG_NAME env variable
         let project_name = match std::env::var("CARGO_PKG_NAME") {
             Ok(p) => p,
@@ -177,29 +157,6 @@ impl TracebackError {
         self.computer = Some(computer_name);
         self.user = Some(username);
         self
-    }
-    pub fn with_is_parent(mut self, is_parent: bool) -> Self {
-        self.is_default = false;
-        self.is_parent = is_parent;
-        self
-    }
-    pub fn clone(&mut self) -> Self {
-        let handled = self.is_handled;
-        self.is_handled = true;
-        Self {
-            message: self.message.clone(),
-            line: self.line.clone(),
-            file: self.file.clone(),
-            parent: self.parent.clone(),
-            time_created: self.time_created.clone(),
-            extra_data: self.extra_data.clone(),
-            project: self.project.clone(),
-            computer: self.computer.clone(),
-            user: self.user.clone(),
-            is_parent: self.is_parent.clone(),
-            is_handled: handled,
-            is_default: self.is_default.clone(),
-        }
     }
 }
 
@@ -318,7 +275,7 @@ macro_rules! traceback {
         use $crate::serde_json::json;
         let err_string = $e.to_string();
         let mut boxed: Box<dyn std::any::Any> = Box::new($e);
-        if let Some(traceback_err) = boxed.downcast_mut::<TracebackError>() {
+        if let Some(traceback_err) = boxed.downcast_mut::<$crate::TracebackError>() {
             traceback_err.is_handled = true;
             $crate::TracebackError::new(
                 traceback_err.message.to_string(),
@@ -337,7 +294,7 @@ macro_rules! traceback {
         use $crate::serde_json::json;
         let err_string = $e.to_string();
         let mut boxed: Box<dyn std::any::Any> = Box::new($e);
-        if let Some(traceback_err) = boxed.downcast_mut::<TracebackError>() {
+        if let Some(traceback_err) = boxed.downcast_mut::<$crate::TracebackError>() {
             traceback_err.is_handled = true;
             $crate::TracebackError::new(
                 $msg.to_string(),
