@@ -12,6 +12,8 @@ use std::{
     io::Write,
 };
 
+pub use serde_json;
+
 pub static mut TRACEBACK_ERROR_CALLBACK: Option<TracebackCallbackType> = None;
 
 // This struct is getting messier by the minute
@@ -307,10 +309,10 @@ pub fn default_callback(err: TracebackError) {
 #[macro_export]
 macro_rules! traceback {
     () => {
-        $crate::error_types::TracebackError::new("".to_string(), file!().to_string(), line!())
+        $crate::TracebackError::new("".to_string(), file!().to_string(), line!())
     };
     ($msg:expr) => {
-        $crate::error_types::TracebackError::new($msg.to_string(), file!().to_string(), line!())
+        $crate::TracebackError::new($msg.to_string(), file!().to_string(), line!())
     };
     (err $e:expr) => {{
         use $crate::serde_json::json;
@@ -318,14 +320,14 @@ macro_rules! traceback {
         let mut boxed: Box<dyn std::any::Any> = Box::new($e);
         if let Some(traceback_err) = boxed.downcast_mut::<TracebackError>() {
             traceback_err.is_handled = true;
-            $crate::error_types::TracebackError::new(
+            $crate::TracebackError::new(
                 traceback_err.message.to_string(),
                 file!().to_string(),
                 line!(),
             )
             .with_parent(traceback_err.clone())
         } else {
-            $crate::error_types::TracebackError::new(String::from(""), file!().to_string(), line!())
+            $crate::TracebackError::new(String::from(""), file!().to_string(), line!())
                 .with_extra_data(json!({
                     "error": err_string
                 }))
@@ -337,14 +339,14 @@ macro_rules! traceback {
         let mut boxed: Box<dyn std::any::Any> = Box::new($e);
         if let Some(traceback_err) = boxed.downcast_mut::<TracebackError>() {
             traceback_err.is_handled = true;
-            $crate::error_types::TracebackError::new(
+            $crate::TracebackError::new(
                 $msg.to_string(),
                 file!().to_string(),
                 line!(),
             )
             .with_parent(traceback_err.clone())
         } else {
-            $crate::error_types::TracebackError::new(String::from(""), file!().to_string(), line!())
+            $crate::TracebackError::new(String::from(""), file!().to_string(), line!())
                 .with_extra_data(json!({
                     "error": err_string
                 }))
