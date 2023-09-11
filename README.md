@@ -16,7 +16,7 @@ Add this crate to your Cargo.toml:
 
 ```toml
 [dependencies]
-traceback-error = "0.1.5"
+traceback-error = "0.1.6"
 ```
 
 ## Usage
