@@ -77,8 +77,10 @@ pub static mut TRACEBACK_ERROR_CALLBACK: Option<TracebackCallbackType> = None;
 /// # Dropping Errors
 ///
 /// Errors are automatically dropped when they go out of scope, but before they are dropped,
-/// they are handled by the `TRACEBACK_ERROR_CALLBACK` function.
-/// By default, this function simply serializes the error and writes it to a JSON file.
+/// they are handled by the `TRACEBACK_ERROR_CALLBACK` variable.
+/// By default, this variable is a function simply set to serialize the error and
+/// write it to a JSON file, but the default function can be changed with the
+/// `set_callback!` macro.
 ///
 /// # Callback Types
 ///
@@ -97,6 +99,7 @@ pub static mut TRACEBACK_ERROR_CALLBACK: Option<TracebackCallbackType> = None;
 /// You can create a new `TracebackError` instance using the `traceback!` macro. Additional
 /// data can be added using the `with_extra_data` method, and environment variables are
 /// automatically added when the error is being handled.
+/// The additional data should be stored in a serde_json::Value struct.
 ///
 /// # Environment Variables
 ///
