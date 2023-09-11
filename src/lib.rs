@@ -215,7 +215,7 @@ impl TracebackError {
     /// as it provides context and information related to the error.
     ///
     /// ## Parameters:
-    /// - extra_data: A serde_json::Value containing the extra data you want to associate with the error.
+    /// - `extra_data`: A `serde_json::Value` containing the extra data you want to associate with the error.
     ///
     /// ## Return Value:
     /// - Returns a modified `TracebackError` instance with the provided `extra_data`.
@@ -244,6 +244,35 @@ impl TracebackError {
         self.extra_data = extra_data;
         self
     }
+    /// Adds environment variables to the TracebackError.
+    ///
+    /// This method populates the `project`, `computer`, and `user` fields of the `TracebackError`
+    /// based on the values of specific environment variables. If any of these environment variables
+    /// are not found, default values are used, and the error message reflects that the information
+    /// is unknown due to the missing environment variables.
+    ///
+    /// # Example:
+    ///
+    /// ```
+    /// use traceback_error::TracebackError;
+    ///
+    /// // Create a new TracebackError and populate environment variables
+    /// let error = TracebackError::new("An error occurred".to_string(), file!().to_string(), line!())
+    ///     .with_env_vars();
+    ///
+    /// // The error now contains information about the project, computer, and user from
+    /// // environment variables, or default values if the environment variables are missing.
+    /// ```
+    ///
+    /// # Environment Variables Used:
+    ///
+    /// - `CARGO_PKG_NAME`: Used to set the `project` field.
+    /// - `COMPUTERNAME`: Used to set the `computer` field.
+    /// - `USERNAME`: Used to set the `user` field.
+    ///
+    /// # Returns:
+    ///
+    /// A modified `TracebackError` with updated `project`, `computer`, and `user` fields.
     pub fn with_env_vars(mut self) -> Self {
         // get project name using the CARGO_PKG_NAME env variable
         let project_name = match std::env::var("CARGO_PKG_NAME") {
@@ -266,6 +295,33 @@ impl TracebackError {
         self.user = Some(username);
         self
     }
+    /// The `with_parent` method allows you to associate a parent error with the current `TracebackError` instance.
+    /// This can be useful when you want to create a hierarchical structure of errors, where one error is considered the parent of another.
+    ///
+    /// ## Parameters:
+    /// - `parent`: A `TracebackError` instance that you want to set as the parent of the current error.
+    ///
+    /// ## Return Value:
+    /// - Returns a modified `TracebackError` instance with the specified parent error.
+    ///
+    /// ## Example:
+    /// ```rs
+    /// use traceback_error::TracebackError;
+    ///
+    /// fn main() {
+    ///     // Create a new TracebackError
+    ///     let parent_error = TracebackError::new("Parent error".to_string(), file!().to_string(), line!());
+    ///
+    ///     // Create a child error with the parent error
+    ///     let child_error = TracebackError::new("Child error".to_string(), file!().to_string(), line!())
+    ///         .with_parent(parent_error);
+    ///
+    ///     // Now, `child_error` has `parent_error` as its parent
+    /// }
+    /// ```
+    ///
+    /// The with_parent method is particularly useful when you want to establish relationships between errors,
+    /// making it easier to understand error hierarchies and diagnose issues.
     pub fn with_parent(mut self, parent: TracebackError) -> Self {
         self.is_default = false;
         self.parent = Some(Box::new(parent.with_is_parent(true)));
