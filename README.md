@@ -16,7 +16,7 @@ Add this crate to your Cargo.toml:
 
 ```toml
 [dependencies]
-traceback-error = "0.1.2"
+traceback-error = "0.1.3"
 ```
 
 ## Usage
@@ -32,10 +32,7 @@ fn main() {
     let error_with_data = error
         .with_extra_data(json!({
             "details": "Additional information about the error"
-        }))
-        .with_project("MyProject")
-        .with_computer_name("MyComputer")
-        .with_username("MyUser");
+        }));
 
     // Handle the error
     if let Err(err) = do_something_that_might_fail() {
