@@ -40,36 +40,34 @@ pub fn reset_traceback_callback() {
 ///
 /// To use this macro, provide the name of the callback function you want to use
 /// as the custom traceback callback. This function should take an argument of
-/// type `utils::error_types::TracebackError`. The macro generates a unique
+/// type `traceback_error::TracebackError`. The macro generates a unique
 /// struct and function to wrap your callback and sets it as the traceback
-/// callback using `utils::set_traceback_callback`.
+/// callback using `traceback_error::set_traceback_callback`.
 ///
 /// # Example
 ///
 /// ```rust
 /// // Define a custom traceback callback function
-/// fn my_traceback_callback(error: utils::error_types::TracebackError) {
+/// fn my_traceback_callback(error: traceback_error::TracebackError) {
 ///     // Custom error handling logic here
 ///     println!("Custom traceback callback called: {:?}", error);
 /// }
 ///
 /// // Use the set_traceback macro to set the custom traceback callback
-/// set_traceback!(my_traceback_callback);
+/// traceback_error::set_traceback!(my_traceback_callback);
 ///
 /// // Any TracebackErrors will now be handled by my_traceback_callback when dropped
 /// ```
 ///
 /// ```rust
 /// // The same is possible with asynchronous functions
-/// async fn my_traceback_callback(error: utils::error_types::TracebackError) {
+/// async fn my_traceback_callback(error: traceback_error::TracebackError) {
 ///     // Custom error handling logic here
 ///     println!("Async custom traceback callback called: {:?}", error);
 /// }
 ///
 /// // But you have to specify that it is asynchronous
-/// set_traceback!(async my_traceback_callback);
-///
-/// // Any TracebackErrors will now be handled by my_traceback_callback when dropped
+/// traceback_error::set_traceback!(async my_traceback_callback);
 /// ```
 #[macro_export]
 macro_rules! set_traceback {
@@ -80,8 +78,8 @@ macro_rules! set_traceback {
             mod [<_private_ $callback _ TempStruct>] {
                 pub struct [<$callback _ TempStruct>];
 
-                impl $crate::TracebackCallback for [<$callback _ TempStruct>] {
-                    fn call(&self, error: $crate::error_types::TracebackError) {
+                impl $crate::set_callback::TracebackCallback for [<$callback _ TempStruct>] {
+                    fn call(&self, error: $crate::TracebackError) {
                         super::$callback(error)
                     }
                 }
@@ -93,7 +91,7 @@ macro_rules! set_traceback {
             }
 
             // Call the macro to set the traceback callback
-            $crate::set_traceback_callback($crate::TracebackCallbackType::Sync(Box::new([<$callback _ temp_struct>]())));
+            $crate::set_callback::set_traceback_callback($crate::set_callback::TracebackCallbackType::Sync(Box::new([<$callback _ temp_struct>]())));
         }
     };
     (async $callback:ident) => {
@@ -103,10 +101,10 @@ macro_rules! set_traceback {
             mod [<_private_ $callback _ TempStruct>] {
                 pub struct [<$callback _ TempStruct>];
 
-                impl $crate::TracebackCallbackAsync for [<$callback _ TempStruct>] {
+                impl $crate::set_callback::TracebackCallbackAsync for [<$callback _ TempStruct>] {
                     fn call(
                         &self,
-                        error: $crate::error_types::TracebackError,
+                        error: $crate::TracebackError,
                     ) -> std::pin::Pin<
                         Box<dyn std::future::Future<Output = ()> + std::marker::Send + std::marker::Sync>,
                     > {
@@ -121,7 +119,7 @@ macro_rules! set_traceback {
             }
 
             // Call the macro to set the traceback callback
-            $crate::set_traceback_callback($crate::TracebackCallbackType::Async(Box::new([<$callback _ temp_struct>]())));
+            $crate::set_callback::set_traceback_callback($crate::set_callback::TracebackCallbackType::Async(Box::new([<$callback _ temp_struct>]())));
         }
     };
 }

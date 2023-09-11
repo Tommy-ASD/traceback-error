@@ -12,6 +12,7 @@ use std::{
     io::Write,
 };
 
+pub use paste;
 pub use serde_json;
 
 pub static mut TRACEBACK_ERROR_CALLBACK: Option<TracebackCallbackType> = None;
@@ -28,9 +29,8 @@ pub static mut TRACEBACK_ERROR_CALLBACK: Option<TracebackCallbackType> = None;
 /// ```rust
 /// use chrono::{DateTime, Utc};
 /// use serde_json::Value;
-/// use traceback_error::TracebackError;
 ///
-/// let error = traceback!("Custom error message");
+/// let error = traceback_error::traceback!("Custom error message");
 /// println!("{:?}", error);
 /// ```
 ///
@@ -446,70 +446,62 @@ pub fn default_callback(err: TracebackError) {
 /// Creating a new `TracebackError` with a custom message:
 ///
 /// ```rust
-/// use traceback_error::traceback;
-///
-/// let error = traceback!("Custom error message");
+/// let error = traceback_error::traceback!("Custom error message");
 /// println!("{:?}", error);
 /// ```
 ///
 /// Creating a new `TracebackError` from a generic error:
 ///
 /// ```rust
-/// use traceback_error::traceback;
-///
-/// fn custom_function() -> Result<(), Box<dyn std::error::Error>> {
+/// fn custom_function() -> Result<(), traceback_error::TracebackError> {
 ///     // ...
 ///     // Some error occurred
 ///     let generic_error: Box<dyn std::error::Error> = Box::new(std::io::Error::new(std::io::ErrorKind::Other, "Generic error"));
-///     Err(traceback!(err generic_error))
+///     Err(traceback_error::traceback!(err generic_error))
 /// }
 /// ```
 ///
 /// Creating a new `TracebackError` from a generic error with a custom message:
 ///
 /// ```rust
-/// use traceback_error::traceback;
-///
-/// fn custom_function() -> Result<(), Box<dyn std::error::Error>> {
+/// fn custom_function() -> Result<(), traceback_error::TracebackError> {
 ///     // ...
 ///     // Some error occurred
 ///     let generic_error: Box<dyn std::error::Error> = Box::new(std::io::Error::new(std::io::ErrorKind::Other, "Generic error"));
-///     Err(traceback!(generic_error, "Custom error message"))
+///     Err(traceback_error::traceback!(generic_error, "Custom error message"))
 /// }
 /// ```
 ///
 /// Tracing an error:
 /// ```rust
-/// use traceback_error::{traceback, TracebackError};
-///
 /// fn main() {
 ///     match caller_of_tasks() {
 ///         Ok(_) => {}
 ///         Err(e) => {
-///             traceback!(e, "One of the tasks failed");
+///             traceback_error::traceback!(e, "One of the tasks failed");
 ///         }
 ///     }
 /// }
 ///
-/// fn task_that_may_fail() -> Result<(), TracebackError> {
-///     return Err(traceback!("task_that_may_fail failed"));
+/// fn task_that_may_fail() -> Result<(), traceback_error::TracebackError> {
+///     return Err(traceback_error::traceback!("task_that_may_fail failed"));
 /// }
 ///
-/// fn other_task_that_may_fail() -> Result<(), TracebackError> {
-///     return Err(traceback!("other_task_that_may_fail failed"));
+/// fn other_task_that_may_fail() -> Result<(), traceback_error::TracebackError> {
+///     return Err(traceback_error::traceback!("other_task_that_may_fail failed"));
 /// }
 ///
-/// fn caller_of_tasks() -> Result<(), TracebackError> {
+/// fn caller_of_tasks() -> Result<(), traceback_error::TracebackError> {
 ///     match task_that_may_fail() {
 ///         Ok(_) => {}
 ///         Err(e) => {
-///             return Err(traceback!(err e));
+///             return Err(traceback_error::traceback!(err e));
 ///         }
 ///     };
 ///     match other_task_that_may_fail() {
 ///         Ok(_) => {}
 ///         Err(e) => {
-///             return Err(traceback!(err e));
+///             return Err(traceback_error::traceback!(err e));
 ///         }
 ///     };
 ///     Ok(())
