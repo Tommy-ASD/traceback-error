@@ -22,32 +22,25 @@ traceback-error = "0.1.6"
 ## Usage
 
 ```rust
-use traceback_error::TracebackError;
+use traceback_error::{serde_json::json, traceback, TracebackError};
 
 fn main() {
-    // Create a new TracebackError
-    let error = TracebackError::new("An error occurred".to_string(), file!().to_string(), line!());
-
-    // Add extra data
-    let error_with_data = error
-        .with_extra_data(json!({
-            "details": "Additional information about the error"
-        }));
-
-    // Handle the error
+    // Should an error occur, handle it
     if let Err(err) = do_something_that_might_fail() {
         // Handle the error here
         // You can also log or serialize it
         println!("Error: {}", err);
         // Or continue tracing
-        traceback!(e, "The thing that might fail failed");
+        traceback!(err, "The thing that might fail failed");
     }
 }
 
 fn do_something_that_might_fail() -> Result<(), TracebackError> {
     // Your code here
     // Use the traceback! macro to create and handle errors
-    Ok(())
+    Err(traceback!("Something went wrong").with_extra_data(json!({
+        "details": "Additional information about the error"
+    })))
 }
 ```
 
