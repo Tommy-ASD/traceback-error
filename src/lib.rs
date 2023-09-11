@@ -16,12 +16,94 @@ pub use serde_json;
 
 pub static mut TRACEBACK_ERROR_CALLBACK: Option<TracebackCallbackType> = None;
 
-// This struct is getting messier by the minute
-// To whoever's job it becomes refactoring this:
-// Please accept my apologies, and good luck
-// I could maybe attempt to explain what i was thinking when i made this,
-// but i don't think i could do it justice
-// I am sorry
+/// A custom error struct for handling tracebacks in Rust applications.
+///
+/// This struct is designed to capture error information such as the error message,
+/// the file and line where the error occurred, and additional contextual data.
+///
+/// # Examples
+///
+/// Creating a new `TracebackError` with a custom message:
+///
+/// ```rust
+/// use chrono::{DateTime, Utc};
+/// use serde_json::Value;
+/// use traceback_error::TracebackError;
+///
+/// let error = traceback!("Custom error message");
+/// println!("{:?}", error);
+/// ```
+///
+/// # Fields
+///
+/// - `message`: A string containing the error message.
+/// - `file`: A string containing the filename where the error occurred.
+/// - `line`: An unsigned integer representing the line number where the error occurred.
+/// - `parent`: An optional boxed `TracebackError` representing the parent error, if any.
+/// - `time_created`: A `chrono::DateTime<Utc>` indicating when the error was created.
+/// - `extra_data`: A `serde_json::Value` for storing additional error-related data.
+/// - `project`: An optional string representing the project name.
+/// - `computer`: An optional string representing the computer name.
+/// - `user`: An optional string representing the username.
+/// - `is_parent`: A boolean indicating if this error is considered a parent error.
+/// - `is_handled`: A boolean indicating if the error has been handled.
+/// - `is_default`: A boolean indicating if this error is the default error.
+///
+/// # Default Implementation
+///
+/// The `Default` trait is implemented for `TracebackError`, creating a default instance
+/// with the following values:
+///
+/// - `message`: "Default message"
+/// - `file`: The current file's name (using `file!()`).
+/// - `line`: The current line number (using `line!()`).
+/// - `parent`: None
+/// - `time_created`: The Unix epoch time.
+/// - `extra_data`: Value::Null
+/// - `project`: None
+/// - `computer`: None
+/// - `user`: None
+/// - `is_parent`: false
+/// - `is_handled`: false
+/// - `is_default`: true
+///
+/// # Equality Comparison
+///
+/// The `PartialEq` trait is implemented for `TracebackError`, allowing you to compare
+/// two `TracebackError` instances for equality based on their message, file, line, and
+/// other relevant fields. The `is_handled` and `is_default` fields are not considered
+/// when comparing for equality.
+///
+/// # Dropping Errors
+///
+/// Errors are automatically dropped when they go out of scope, but before they are dropped,
+/// they are handled by the `TRACEBACK_ERROR_CALLBACK` function.
+/// By default, this function simply serializes the error and writes it to a JSON file.
+///
+/// # Callback Types
+///
+/// The callback function can be either synchronous or asynchronous, depending on the
+/// `TracebackCallbackType` set globally using the `TRACEBACK_ERROR_CALLBACK` variable.
+/// It can be set using the `set_callback!` macro.
+///
+/// - If `TRACEBACK_ERROR_CALLBACK` is `Some(TracebackCallbackType::Async)`, an
+///   asynchronous callback function is used.
+/// - If `TRACEBACK_ERROR_CALLBACK` is `Some(TracebackCallbackType::Sync)`, a
+///   synchronous callback function is used.
+/// - If `TRACEBACK_ERROR_CALLBACK` is `None`, a default callback function is used.
+///
+/// # Creating Errors
+///
+/// You can create a new `TracebackError` instance using the `traceback!` macro. Additional
+/// data can be added using the `with_extra_data` method, and environment variables are
+/// automatically added when the error is being handled.
+///
+/// # Environment Variables
+///
+/// The `with_env_vars` method populates the `project`, `computer`, and `user` fields with
+/// information obtained from environment variables (`CARGO_PKG_NAME`, `COMPUTERNAME`, and
+/// `USERNAME`, respectively) or assigns default values if the environment variables are
+/// not present.
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct TracebackError {
     pub message: String,
@@ -73,16 +155,10 @@ impl PartialEq for TracebackError {
             && this.computer == other.computer
             && this.user == other.user
             && this.is_parent == other.is_parent
-        // && self.is_handled == other.is_handled
-        // this should not be compared, as it is not a part of the error
     }
 }
 
 impl Drop for TracebackError {
-    // for anyone (including me) reading this in the future
-    // i am sorry for this mess
-    // this was made at a time i was new to memory management
-    // TODO: come back when more knowledgeable
     fn drop(&mut self) {
         if self.is_parent || self.is_handled || self.is_default {
             return;
@@ -106,14 +182,6 @@ impl Drop for TracebackError {
     }
 }
 
-/// Cloning this may be expensive, but for now it's fine
-/// The reason it may be expensive is because it recursively clones the parent
-/// and the parent's parent and so on
-/// (i think)
-/// To fix this, we could make it so that each of the with_ functions consume self,
-/// and then return a new Self with the new data
-/// Very easy fix, but i am unsure if we'll need the possibility to keep the old error
-/// Maybe make non-consuming and consuming versions?
 impl TracebackError {
     pub fn new(message: String, file: String, line: u32) -> Self {
         Self {
@@ -262,7 +330,78 @@ pub fn default_callback(err: TracebackError) {
         }
     };
 }
-
+/// A macro for creating instances of the `TracebackError` struct with various options.
+///
+/// The `traceback!` macro simplifies the creation of `TracebackError` instances by providing
+/// convenient syntax for specifying error messages and handling different error types.
+///
+/// # Examples
+///
+/// Creating a new `TracebackError` with a custom message:
+///
+/// ```rust
+/// use traceback_error::traceback;
+///
+/// let error = traceback!("Custom error message");
+/// println!("{:?}", error);
+/// ```
+///
+/// Creating a new `TracebackError` from a generic error:
+///
+/// ```rust
+/// use traceback_error::traceback;
+///
+/// fn custom_function() -> Result<(), Box<dyn std::error::Error>> {
+///     // ...
+///     // Some error occurred
+///     let generic_error: Box<dyn std::error::Error> = Box::new(std::io::Error::new(std::io::ErrorKind::Other, "Generic error"));
+///     Err(traceback!(err generic_error))
+/// }
+/// ```
+///
+/// Creating a new `TracebackError` from a generic error with a custom message:
+///
+/// ```rust
+/// use traceback_error::traceback;
+///
+/// fn custom_function() -> Result<(), Box<dyn std::error::Error>> {
+///     // ...
+///     // Some error occurred
+///     let generic_error: Box<dyn std::error::Error> = Box::new(std::io::Error::new(std::io::ErrorKind::Other, "Generic error"));
+///     Err(traceback!(generic_error, "Custom error message"))
+/// }
+/// ```
+///
+/// # Syntax
+///
+/// The `traceback!` macro supports the following syntax variations:
+///
+/// - `traceback!()`: Creates a `TracebackError` with an empty message, using the current file
+///   and line number.
+///
+/// - `traceback!($msg:expr)`: Creates a `TracebackError` with the specified error message,
+///   using the current file and line number.
+///
+/// - `traceback!(err $e:expr)`: Attempts to downcast the provided error (`$e`) to a
+///   `TracebackError`. If successful, it marks the error as handled and creates a new
+///   `TracebackError` instance based on the downcasted error. If the downcast fails, it
+///   creates a `TracebackError` with an empty message and includes the original error's
+///   description in the extra data field.
+///
+/// - `traceback!($e:expr, $msg:expr)`: Similar to the previous variation but allows specifying
+///   a custom error message for the new `TracebackError` instance.
+///
+/// # Error Handling
+///
+/// When using the `traceback!` macro to create `TracebackError` instances from other error types,
+/// it automatically sets the `is_handled` flag to `true` for the original error to indicate that
+/// it has been handled. This prevents the `TRACEBACK_ERROR_CALLBACK` function to be called on it.
+///
+/// # Environment Variables
+///
+/// Environment variables such as `CARGO_PKG_NAME`, `COMPUTERNAME`, and `USERNAME` are automatically
+/// added to the `project`, `computer`, and `user` fields when the error is being handled.
+///
 #[macro_export]
 macro_rules! traceback {
     () => {
