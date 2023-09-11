@@ -204,7 +204,7 @@ impl TracebackError {
         self.extra_data = extra_data;
         self
     }
-    fn with_env_vars(mut self) -> Self {
+    pub fn with_env_vars(mut self) -> Self {
         // get project name using the CARGO_PKG_NAME env variable
         let project_name = match std::env::var("CARGO_PKG_NAME") {
             Ok(p) => p,
@@ -224,6 +224,16 @@ impl TracebackError {
         self.project = Some(project_name);
         self.computer = Some(computer_name);
         self.user = Some(username);
+        self
+    }
+    pub fn with_parent(mut self, parent: TracebackError) -> Self {
+        self.is_default = false;
+        self.parent = Some(Box::new(parent.with_is_parent(true)));
+        self
+    }
+    fn with_is_parent(mut self, is_parent: bool) -> Self {
+        self.is_default = false;
+        self.is_parent = is_parent;
         self
     }
 }
