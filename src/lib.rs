@@ -468,7 +468,7 @@ pub fn default_callback(err: TracebackError) {
 ///     // ...
 ///     // Some error occurred
 ///     let generic_error: Box<dyn std::error::Error> = Box::new(std::io::Error::new(std::io::ErrorKind::Other, "Generic error"));
-///     Err(traceback_error::traceback!(generic_error, "Custom error message"))
+///     Err(traceback_error::traceback!(err generic_error, "Custom error message"))
 /// }
 /// ```
 ///
@@ -478,7 +478,7 @@ pub fn default_callback(err: TracebackError) {
 ///     match caller_of_tasks() {
 ///         Ok(_) => {}
 ///         Err(e) => {
-///             traceback_error::traceback!(e, "One of the tasks failed");
+///             traceback_error::traceback!(err e, "One of the tasks failed");
 ///         }
 ///     }
 /// }
@@ -568,7 +568,7 @@ pub fn default_callback(err: TracebackError) {
 ///   creates a `TracebackError` with an empty message and includes the original error's
 ///   description in the extra data field.
 ///
-/// - `traceback!($e:expr, $msg:expr)`: Similar to the previous variation but allows specifying
+/// - `traceback!(err $e:expr, $msg:expr)`: Similar to the previous variation but allows specifying
 ///   a custom error message for the new `TracebackError` instance.
 ///
 /// # Error Handling
@@ -609,7 +609,7 @@ macro_rules! traceback {
                 }))
         }
     }};
-    ($e:expr, $msg:expr) => {{
+    (err $e:expr, $msg:expr) => {{
         use $crate::serde_json::json;
         let err_string = $e.to_string();
         let mut boxed: Box<dyn std::any::Any> = Box::new($e);

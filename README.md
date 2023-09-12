@@ -16,7 +16,7 @@ Add this crate to your Cargo.toml:
 
 ```toml
 [dependencies]
-traceback-error = "0.1.7"
+traceback-error = "0.1.8"
 ```
 
 ## Usage
@@ -26,12 +26,12 @@ use traceback_error::{serde_json::json, traceback, TracebackError};
 
 fn main() {
     // Should an error occur, handle it
-    if let Err(err) = do_something_that_might_fail() {
+    if let Err(e) = do_something_that_might_fail() {
         // Handle the error here
         // You can also log or serialize it
-        println!("Error: {}", err);
+        println!("Error: {}", e);
         // Or continue tracing
-        traceback!(err, "The thing that might fail failed");
+        traceback!(err e, "The thing that might fail failed");
     }
 }
 
@@ -46,7 +46,7 @@ fn do_something_that_might_fail() -> Result<(), TracebackError> {
 
 ## Documentation
 
-Detailed documentation is currently work in progress
+Documentation is available at [docs.rs](https://docs.rs/traceback-error/0.1.7/traceback_error/)
 
 ## Contributing
 
