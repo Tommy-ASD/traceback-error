@@ -16,7 +16,7 @@ Add this crate to your Cargo.toml:
 
 ```toml
 [dependencies]
-traceback-error = "0.1.8"
+traceback-error = "0.1.9"
 ```
 
 ## Usage
@@ -46,7 +46,7 @@ fn do_something_that_might_fail() -> Result<(), TracebackError> {
 
 ## Documentation
 
-Documentation is available at [docs.rs](https://docs.rs/traceback-error/0.1.7/traceback_error/)
+Documentation is available at [docs.rs](https://docs.rs/traceback-error/latest/traceback_error/)
 
 ## Contributing
 
