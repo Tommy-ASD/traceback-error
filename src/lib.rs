@@ -15,6 +15,54 @@ use std::{
 pub use paste;
 pub use serde_json;
 
+/// # Traceback Error Callback
+///
+/// The `TRACEBACK_ERROR_CALLBACK` is a mutable static variable that holds an
+/// optional callback function for custom error handling in a Rust program using
+/// the `traceback_error` crate. This callback is called when a `TracebackError`
+/// goes out of scope, allowing you to customize how error information is handled
+/// and reported.
+///
+/// ## Usage
+///
+/// To use the `TRACEBACK_ERROR_CALLBACK`, you can set it to your custom traceback
+/// callback function using the `set_traceback!` macro.
+/// Your custom traceback callback function should take an argument of type
+/// `traceback_error::TracebackError`. The macro generates a unique struct and
+/// function to wrap your callback and sets it as the traceback callback.
+///
+/// Example of setting a custom traceback callback:
+///
+/// ```rust
+/// // Define a custom traceback callback function
+/// fn my_traceback_callback(error: traceback_error::TracebackError) {
+///     // Custom error handling logic here
+///     println!("Custom traceback callback called: {:?}", error);
+/// }
+///
+/// // Use the set_traceback macro to set the custom traceback callback
+/// traceback_error::set_traceback!(my_traceback_callback);
+///
+/// // Any TracebackErrors will now be handled by my_traceback_callback when dropped
+/// ```
+///
+/// ## Asynchronous Callbacks
+///
+/// If your custom traceback callback is asynchronous, you can specify it as such
+/// using the `async` keyword when calling the `set_traceback!` macro.
+///
+/// Example of setting an asynchronous custom traceback callback:
+///
+/// ```rust
+/// // Define an asynchronous custom traceback callback function
+/// async fn my_async_traceback_callback(error: traceback_error::TracebackError) {
+///     // Custom error handling logic here
+///     println!("Async custom traceback callback called: {:?}", error);
+/// }
+///
+/// // Use the set_traceback macro to set the asynchronous custom traceback callback
+/// traceback_error::set_traceback!(async my_async_traceback_callback);
+/// ```
 pub static mut TRACEBACK_ERROR_CALLBACK: Option<TracebackCallbackType> = None;
 
 /// A custom error struct for handling tracebacks in Rust applications.
@@ -175,6 +223,7 @@ impl Drop for TracebackError {
             return;
         }
         let mut this = std::mem::take(self);
+        this = this.with_env_vars();
         this.is_handled = true;
         unsafe {
             let callback: Option<&mut TracebackCallbackType> = TRACEBACK_ERROR_CALLBACK.as_mut();
@@ -387,9 +436,46 @@ impl serde::de::Error for TracebackError {
     }
 }
 
+/// # Default Traceback Error Callback
+///
+/// The `default_callback` function is a built-in error handling callback used
+/// when `TRACEBACK_ERROR_CALLBACK` is set to `None`. This callback is responsible
+/// for handling and reporting `TracebackError` instances in a default manner.
+///
+/// ## Behavior
+///
+/// When a `TracebackError` goes out of scope and `TRACEBACK_ERROR_CALLBACK` is not
+/// set to a custom callback, the `default_callback` function is used. This function
+/// performs the following actions:
+///
+/// 1. Retrieves the current time in UTC and creates a timestamp string.
+/// 2. Checks if the "errors" folder exists and creates it if it doesn't.
+/// 3. Generates a unique filename based on the current timestamp.
+/// 4. Writes the error information in JSON format to a file with the generated filename
+///    in the "errors" folder.
+/// 5. Logs any encountered errors during the above steps.
+///
+/// This default behavior ensures that unhandled errors are captured, timestamped,
+/// and saved as JSON files for later analysis.
+///
+/// ## Usage
+///
+/// Typically, you don't need to call the `default_callback` function directly. Instead,
+/// it is automatically used as the error handler when `TRACEBACK_ERROR_CALLBACK` is not
+/// set to a custom callback.
+///
+/// Example of using the default behavior when `TRACEBACK_ERROR_CALLBACK` is not set:
+///
+/// ```rust
+/// // No custom callback set, so the default_callback will be used
+/// traceback_error::set_traceback!(None);
+///
+/// // Any TracebackErrors will now be handled by the default_callback when dropped
+/// ```
+///
+/// To customize error handling, you can set a custom callback using the `set_traceback!`
+/// macro as shown in the documentation for `TRACEBACK_ERROR_CALLBACK`.
 pub fn default_callback(err: TracebackError) {
-    let err = err.with_env_vars();
-
     // get current time
     let current_time = chrono::Utc::now();
     let current_time_string = current_time.format("%Y-%m-%d.%H-%M-%S").to_string();
