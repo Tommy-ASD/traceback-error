@@ -65,6 +65,17 @@ pub use serde_json;
 /// ```
 pub static mut TRACEBACK_ERROR_CALLBACK: Option<TracebackCallbackType> = None;
 
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub enum ErrorLevel {
+    None,
+    Unknown,
+    Log,
+    Debug,
+    Warn,
+    Error,
+    Other(String),
+}
+
 /// A custom error struct for handling tracebacks in Rust applications.
 ///
 /// This struct is designed to capture error information such as the error message,
@@ -176,6 +187,7 @@ pub struct TracebackError {
     pub user: Option<String>,
     pub is_parent: bool,
     pub is_handled: bool,
+    pub level: ErrorLevel,
     is_default: bool,
 }
 
@@ -197,6 +209,7 @@ impl Default for TracebackError {
             is_parent: false,
             is_handled: false,
             is_default: true,
+            level: ErrorLevel::Log,
         }
     }
 }
@@ -243,7 +256,7 @@ impl Drop for TracebackError {
 }
 
 impl TracebackError {
-    pub fn new(message: String, file: String, line: u32) -> Self {
+    pub fn new(message: String, file: String, line: u32, level: ErrorLevel) -> Self {
         Self {
             message,
             file,
@@ -257,6 +270,7 @@ impl TracebackError {
             is_parent: false,
             is_handled: false,
             is_default: false,
+            level,
         }
     }
     /// This method allows you to attach additional data to a `TracebackError` instance.
@@ -432,6 +446,7 @@ impl serde::de::Error for TracebackError {
             is_parent: false,
             is_handled: false,
             is_default: false,
+            level: ErrorLevel::Log,
         }
     }
 }
@@ -668,13 +683,14 @@ pub fn default_callback(err: TracebackError) {
 /// Environment variables such as `CARGO_PKG_NAME`, `COMPUTERNAME`, and `USERNAME` are automatically
 /// added to the `project`, `computer`, and `user` fields when the error is being handled.
 ///
+// TODO: make macro support error levels
 #[macro_export]
 macro_rules! traceback {
     () => {
-        $crate::TracebackError::new("".to_string(), file!().to_string(), line!())
+        $crate::TracebackError::new("".to_string(), file!().to_string(), line!(), $crate::ErrorLevel::Unknown)
     };
     ($msg:expr) => {
-        $crate::TracebackError::new($msg.to_string(), file!().to_string(), line!())
+        $crate::TracebackError::new($msg.to_string(), file!().to_string(), line!(), $crate::ErrorLevel::Unknown)
     };
     (err $e:expr) => {{
         use $crate::serde_json::json;
@@ -686,10 +702,11 @@ macro_rules! traceback {
                 traceback_err.message.to_string(),
                 file!().to_string(),
                 line!(),
+                $crate::ErrorLevel::Unknown,
             )
             .with_parent(traceback_err.clone())
         } else {
-            $crate::TracebackError::new(String::from(""), file!().to_string(), line!())
+            $crate::TracebackError::new(String::from(""), file!().to_string(), line!(), $crate::ErrorLevel::Unknown)
                 .with_extra_data(json!({
                     "error": err_string
                 }))
@@ -705,10 +722,11 @@ macro_rules! traceback {
                 $msg.to_string(),
                 file!().to_string(),
                 line!(),
+                $crate::ErrorLevel::Unknown,
             )
             .with_parent(traceback_err.clone())
         } else {
-            $crate::TracebackError::new(String::from(""), file!().to_string(), line!())
+            $crate::TracebackError::new($msg.to_string(), file!().to_string(), line!(), $crate::ErrorLevel::Unknown)
                 .with_extra_data(json!({
                     "error": err_string
                 }))
