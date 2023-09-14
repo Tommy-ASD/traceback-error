@@ -170,7 +170,7 @@ pub struct TracebackError {
     pub line: u32,
     pub parent: Option<Box<TracebackError>>,
     pub time_created: DateTime<Utc>,
-    pub extra_data: Value,
+    pub extra_data: Vec<Value>,
     pub project: Option<String>,
     pub computer: Option<String>,
     pub user: Option<String>,
@@ -190,7 +190,7 @@ impl Default for TracebackError {
                 chrono::NaiveDateTime::from_timestamp_opt(0, 0).unwrap(),
                 Utc,
             ),
-            extra_data: Value::Null,
+            extra_data: vec![],
             project: None,
             computer: None,
             user: None,
@@ -250,7 +250,7 @@ impl TracebackError {
             line,
             parent: None,
             time_created: Utc::now(),
-            extra_data: Value::Null,
+            extra_data: vec![],
             project: None,
             computer: None,
             user: None,
@@ -290,7 +290,7 @@ impl TracebackError {
     /// available for analysis when handling errors in your Rust application.
     pub fn with_extra_data(mut self, extra_data: Value) -> Self {
         self.is_default = false;
-        self.extra_data = extra_data;
+        self.extra_data.push(extra_data);
         self
     }
     /// Adds environment variables to the TracebackError.
@@ -422,10 +422,10 @@ impl serde::de::Error for TracebackError {
             line: 0,
             parent: None,
             time_created: Utc::now(),
-            extra_data: json!({
+            extra_data: vec![json!({
                 "error_type": "serde::de::Error",
                 "error_message": msg.to_string()
-            }),
+            })],
             project: None,
             computer: None,
             user: None,
