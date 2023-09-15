@@ -3,7 +3,7 @@ pub mod set_callback;
 
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use serde_json::{json, Value};
+use serde_json::{json, Map, Value};
 use set_callback::TracebackCallbackType;
 use std::{
     error::Error,
@@ -181,7 +181,7 @@ pub struct TracebackError {
     pub line: u32,
     pub parent: Option<Box<TracebackError>>,
     pub time_created: DateTime<Utc>,
-    pub extra_data: Vec<Value>,
+    pub extra_data: serde_json::Map<String, Value>,
     pub project: Option<String>,
     pub computer: Option<String>,
     pub user: Option<String>,
@@ -202,7 +202,7 @@ impl Default for TracebackError {
                 chrono::NaiveDateTime::from_timestamp_opt(0, 0).unwrap(),
                 Utc,
             ),
-            extra_data: vec![],
+            extra_data: Map::new(),
             project: None,
             computer: None,
             user: None,
@@ -263,7 +263,7 @@ impl TracebackError {
             line,
             parent: None,
             time_created: Utc::now(),
-            extra_data: vec![],
+            extra_data: Map::new(),
             project: None,
             computer: None,
             user: None,
@@ -304,7 +304,39 @@ impl TracebackError {
     /// available for analysis when handling errors in your Rust application.
     pub fn with_extra_data(mut self, extra_data: Value) -> Self {
         self.is_default = false;
-        self.extra_data.push(extra_data);
+
+        let old_obj = &mut self.extra_data;
+
+        match extra_data {
+            serde_json::Value::Object(new_obj) => {
+                for (key, new_value) in new_obj.iter() {
+                    old_obj
+                        .entry(key.clone())
+                        .and_modify(|old_value| {
+                            if let serde_json::Value::Object(old_obj) = old_value {
+                                if let serde_json::Value::Object(new_obj) = new_value {
+                                    // Recursively merge if both values are objects
+                                    *old_value = serde_json::Value::Object(merge_json_objects(
+                                        old_obj.clone(),
+                                        new_obj.clone(),
+                                    ));
+                                }
+                            } else {
+                                // Replace the old non-object value
+                                *old_value = new_value.clone();
+                            }
+                        })
+                        .or_insert(new_value.clone());
+                }
+            }
+            serde_json::Value::Bool(_)
+            | serde_json::Value::String(_)
+            | serde_json::Value::Number(_)
+            | serde_json::Value::Null
+            | serde_json::Value::Array(_) => {
+                old_obj.insert("extra_data".to_string(), extra_data);
+            }
+        }
         self
     }
     /// Adds environment variables to the TracebackError.
@@ -436,10 +468,13 @@ impl serde::de::Error for TracebackError {
             line: 0,
             parent: None,
             time_created: Utc::now(),
-            extra_data: vec![json!({
+            extra_data: json!({
                 "error_type": "serde::de::Error",
                 "error_message": msg.to_string()
-            })],
+            })
+            .as_object()
+            .unwrap()
+            .clone(),
             project: None,
             computer: None,
             user: None,
@@ -732,4 +767,29 @@ macro_rules! traceback {
                 }))
         }
     }};
+}
+
+fn merge_json_objects(
+    mut obj1: serde_json::Map<String, serde_json::Value>,
+    obj2: serde_json::Map<String, serde_json::Value>,
+) -> serde_json::Map<String, serde_json::Value> {
+    for (key, value) in obj2 {
+        obj1.entry(key)
+            .and_modify(|old_value| {
+                if let serde_json::Value::Object(old_obj) = old_value {
+                    if let serde_json::Value::Object(new_obj) = value.clone() {
+                        // Recursively merge if both values are objects
+                        *old_value = serde_json::Value::Object(merge_json_objects(
+                            old_obj.clone(),
+                            new_obj.clone(),
+                        ));
+                    }
+                } else {
+                    // Replace the old non-object value
+                    *old_value = value.clone();
+                }
+            })
+            .or_insert(value);
+    }
+    obj1
 }
