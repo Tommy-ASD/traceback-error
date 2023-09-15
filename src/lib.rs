@@ -743,7 +743,7 @@ macro_rules! traceback {
         } else {
             $crate::TracebackError::new(String::from(""), file!().to_string(), line!(), $crate::ErrorLevel::Unknown)
                 .with_extra_data(json!({
-                    "error": err_string
+                    "parent_error": err_string
                 }))
         }
     }};
@@ -763,7 +763,7 @@ macro_rules! traceback {
         } else {
             $crate::TracebackError::new($msg.to_string(), file!().to_string(), line!(), $crate::ErrorLevel::Unknown)
                 .with_extra_data(json!({
-                    "error": err_string
+                    "parent_error": err_string
                 }))
         }
     }};
